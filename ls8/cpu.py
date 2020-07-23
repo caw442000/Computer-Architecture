@@ -12,6 +12,8 @@ NOP = 0b00000000
 PUSH = 0b01000101
 POP = 0b01000110
 SP = 0b00000111
+CALL = 0b01010000
+RET = 0b00010001
 
 class CPU:
     """Main CPU class."""
@@ -23,15 +25,20 @@ class CPU:
         self.pc = 0
         self.running = True
         self.reg[7] = 0xF4
-        self.sp = self.reg[7]
+        self.sp = 7
         self.branch_table = {}
         self.branch_table[HLT] = self.handle_hlt
         self.branch_table[LDI] = self.handle_ldi
         self.branch_table[PRN] = self.handle_prn
         self.branch_table[MUL] = self.handle_mul
+        self.branch_table[ADD] = self.handle_add
+        self.branch_table[CALL] = self.handle_call
+        self.branch_table[RET] = self.handle_ret
         self.branch_table[NOP] = self.handle_nop
         self.branch_table[POP] = self.handle_pop
         self.branch_table[PUSH] = self.handle_push
+
+      
         
 
 
@@ -79,6 +86,7 @@ class CPU:
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == "DIV":
             self.reg[reg_a] /= self.reg[reg_b]
+        
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -130,13 +138,20 @@ class CPU:
         self.alu("MUL", reg_num_1, reg_num_2)
         self.pc += 3
 
+
+    def handle_add(self):
+        reg_num_1 = self.ram_read(self.pc + 1)
+        reg_num_2 = self.ram_read(self.pc + 2)
+        self.alu("ADD", reg_num_1, reg_num_2)
+        self.pc += 3
+
     def handle_pop(self):
         # get register number to put value in
-        reg_a = self.ram_read(self.pc + 1)
+        reg_num = self.ram_read(self.pc + 1)
         # use stack pointer to get the value
-        value = self.ram[self.sp]
+        value = self.ram_read(self.sp)
         # put the value into the given register
-        self.reg[reg_a] = value
+        self.reg[reg_num] = value
         # now will increment the stack pointer:
         self.sp += 1
         # increment our stack pointer
@@ -146,14 +161,54 @@ class CPU:
         # decriment the stack pointer
         self.sp -= 1
         # get the register number
-        reg_a = self.ram_read(self.pc + 1)
+        reg_num = self.ram_read(self.pc + 1)
         # get a value from the given register
-        value = self.reg[reg_a]
+        value = self.reg[reg_num]
         # put the value at the stack pointer address
-        self.ram[self.sp] = value
+        self.ram_write(self.sp, value)
         # increment program counter by 2
         self.pc += 2
+
+    def handle_call(self):
+        ### push command after CALL onto the stack
+        return_address = self.pc + 2
+     
+        #### Get register number
+        reg_num = self.ram[self.pc + 1]
+        ### get the address to jump to, from the register
+        subroutine_address = self.reg[reg_num]
+
+        # push it on stack
+        # decrement stack pointer
+        # self.reg[7] -= 1
+        self.sp -= 1
+        # self.sp = self.reg[7]
+
+
+     
+    
+        # # this gets the address in the register for the top of stack
+        # top_of_stack_address =self.reg[self.sp]
+    
+        ### put return address on the stack
+        self.ram_write(self.sp, return_address)
         
+
+        
+        ### then look at register, jump to that address
+        self.pc = subroutine_address
+
+    def handle_ret(self):
+        
+        # pop the return address off the stack
+        # top_of_stack_address = self.sp
+        return_address = self.ram_read(self.sp)
+        self.reg[self.sp] += 1
+        
+        # go to return address: set the pc to return address
+        self.pc = return_address
+
+
 
     def run(self):
         """Run the CPU."""
