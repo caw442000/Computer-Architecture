@@ -6,7 +6,12 @@ LDI = 0b10000010
 HLT = 0b00000001
 PRN = 0b01000111
 MUL = 0b10100010
+ADD = 0b10100000
+SUB = 0b10100001
 NOP = 0b00000000
+PUSH = 0b01000101
+POP = 0b01000110
+SP = 0b00000111
 
 class CPU:
     """Main CPU class."""
@@ -17,13 +22,16 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.running = True
-        # self.reg[7] = 0xF4
+        self.reg[7] = 0xF4
+        self.sp = self.reg[7]
         self.branch_table = {}
         self.branch_table[HLT] = self.handle_hlt
         self.branch_table[LDI] = self.handle_ldi
         self.branch_table[PRN] = self.handle_prn
         self.branch_table[MUL] = self.handle_mul
         self.branch_table[NOP] = self.handle_nop
+        self.branch_table[POP] = self.handle_pop
+        self.branch_table[PUSH] = self.handle_push
         
 
 
@@ -122,24 +130,37 @@ class CPU:
         self.alu("MUL", reg_num_1, reg_num_2)
         self.pc += 3
 
+    def handle_pop(self):
+        # get register number to put value in
+        reg_a = self.ram_read(self.pc + 1)
+        # use stack pointer to get the value
+        value = self.ram[self.sp]
+        # put the value into the given register
+        self.reg[reg_a] = value
+        # now will increment the stack pointer:
+        self.sp += 1
+        # increment our stack pointer
+        self.pc += 2
+
+    def handle_push(self):
+        # decriment the stack pointer
+        self.sp -= 1
+        # get the register number
+        reg_a = self.ram_read(self.pc + 1)
+        # get a value from the given register
+        value = self.reg[reg_a]
+        # put the value at the stack pointer address
+        self.ram[self.sp] = value
+        # increment program counter by 2
+        self.pc += 2
+        
+
     def run(self):
         """Run the CPU."""
         
         while self.running:
             ir = self.ram[self.pc]
             self.branch_table[ir]()
-
-            # if ir == HLT:
-            #     self.HLT()
-            # elif ir == LDI:
-            #     self.LDI()
-            # elif ir == PRN:
-            #     self.PRN()
-            # elif ir == MUL:
-            #     self.MUL()
-            # else:
-            #     print(f"Instruction '{ir}'' at address '{self.pc}' is not recognized")
-            #     self.pc += 1
 
 
     def ram_read(self, address):
