@@ -185,13 +185,13 @@ class CPU:
         # self.sp = self.reg[7]
 
 
-     
+        print(self.sp)
     
-        # # this gets the address in the register for the top of stack
-        # top_of_stack_address =self.reg[self.sp]
+        # this gets the address in the register for the top of stack
+        top_of_stack_address =self.reg[self.sp]
     
         ### put return address on the stack
-        self.ram_write(self.sp, return_address)
+        self.ram_write(sp, return_address)
         
 
         
@@ -201,10 +201,9 @@ class CPU:
     def handle_ret(self):
         
         # pop the return address off the stack
-        # top_of_stack_address = self.sp
-        return_address = self.ram_read(self.sp)
+        top_of_stack_address = self.reg[self.sp]
+        return_address = self.ram_read(top_of_stack_address)
         self.reg[self.sp] += 1
-        
         # go to return address: set the pc to return address
         self.pc = return_address
 
