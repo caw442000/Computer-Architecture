@@ -191,7 +191,7 @@ class CPU:
         top_of_stack_address =self.reg[self.sp]
     
         ### put return address on the stack
-        self.ram_write(sp, return_address)
+        self.ram_write(top_of_stack_address, return_address)
         
 
         
